@@ -47,6 +47,7 @@ def transcribe(
     word_timestamps: bool = False,
     prepend_punctuations: str = "\"'“¿([{-",
     append_punctuations: str = "\"'.。,，!！?？:：”)]}、",
+    status = None,
     **decode_options,
 ):
     """
@@ -223,6 +224,7 @@ def transcribe(
         total=content_frames, unit="frames", disable=verbose is not False
     ) as pbar:
         last_speech_timestamp = 0.0
+        all_steps = 0
         while seek < content_frames:
             time_offset = float(seek * HOP_LENGTH / SAMPLE_RATE)
             mel_segment = mel[:, seek : seek + N_FRAMES]
@@ -365,8 +367,19 @@ def transcribe(
                 # do not feed the prompt tokens if a high temperature was used
                 prompt_reset_since = len(all_tokens)
 
+            update_steps = min(content_frames, seek) - previous_seek
+
             # update progress bar
-            pbar.update(min(content_frames, seek) - previous_seek)
+            pbar.update(update_steps)
+
+            all_steps += update_steps
+
+            status_percent = float(all_steps) / float(content_frames)
+
+            status_percent *= 100.
+
+            #update status
+            status.publish_status(f"Decoding progress: {status_percent:.2f}%")
 
     return dict(
         text=tokenizer.decode(all_tokens[len(initial_prompt_tokens) :]),

@@ -385,7 +385,8 @@ def transcribe(
             status_percent *= 100.
 
             #update status
-            status.publish_status(f"Decoding progress: {status_percent:.2f}%")
+            if status:
+                status.publish_status(f"Decoding progress: {status_percent:.2f}%")
 
     return dict(
         text=tokenizer.decode(all_tokens[len(initial_prompt_tokens) :]),
